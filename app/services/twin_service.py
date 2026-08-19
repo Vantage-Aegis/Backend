@@ -72,7 +72,8 @@ def build_network(suppliers: List[Dict[str, Any]], ports: List[Dict[str, Any]], 
             "status": rt.get("status", "active"),
             "flow_bpd": flow,
             "current_flow_bpd": flow,
-            "capacity_bpd": rt.get("capacity_bpd", 0)
+            "capacity_bpd": rt.get("capacity_bpd", 0),
+            "waypoints": rt.get("waypoints", [])
         })
 
     return {"nodes": nodes, "edges": edges}

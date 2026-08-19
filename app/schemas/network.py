@@ -22,6 +22,7 @@ class NetworkEdge(BaseModel):
     flow_bpd: int
     current_flow_bpd: int
     capacity_bpd: int
+    waypoints: Optional[List[List[float]]] = Field(default_factory=list)
 
     model_config = ConfigDict(populate_by_name=True)
 
