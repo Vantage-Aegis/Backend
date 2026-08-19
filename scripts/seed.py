@@ -186,8 +186,8 @@ def seed_database():
         {
             "_id": "ref_mangalore",
             "name": "Mangalore Refinery (MRPL)",
-            "lat": 12.98,
-            "lng": 74.81,
+            "lat": 13.0,
+            "lng": 74.8,
             "capacity_bpd": 300000,
             "connected_ports": ["port_jnpt"]
         },
@@ -244,7 +244,8 @@ def seed_database():
             "lead_time_days": 9,
             "transport_cost_usd_bbl": 2.5,
             "risk_base": 61,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[24.5, 57.5], [20.5, 65.5]]
         },
         {
             "_id": "route_002",
@@ -258,7 +259,8 @@ def seed_database():
             "lead_time_days": 10,
             "transport_cost_usd_bbl": 2.7,
             "risk_base": 63,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[26.0, 55.0], [24.0, 60.0], [22.0, 65.0]]
         },
         {
             "_id": "route_003",
@@ -272,7 +274,8 @@ def seed_database():
             "lead_time_days": 8,
             "transport_cost_usd_bbl": 2.3,
             "risk_base": 58,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[24.5, 58.0], [21.0, 66.0]]
         },
         {
             "_id": "route_004",
@@ -286,7 +289,8 @@ def seed_database():
             "lead_time_days": 9,
             "transport_cost_usd_bbl": 2.6,
             "risk_base": 60,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[28.0, 50.0], [26.0, 55.0], [23.5, 63.0]]
         },
         {
             "_id": "route_005",
@@ -300,7 +304,8 @@ def seed_database():
             "lead_time_days": 18,
             "transport_cost_usd_bbl": 4.8,
             "risk_base": 48,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[35.0, 25.0], [27.0, 34.0], [13.0, 43.0], [10.0, 55.0], [5.0, 78.0], [10.0, 83.0]]
         },
         {
             "_id": "route_006",
@@ -314,7 +319,8 @@ def seed_database():
             "lead_time_days": 32,
             "transport_cost_usd_bbl": 7.2,
             "risk_base": 22,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[35.0, 25.0], [27.0, 34.0], [13.0, 43.0], [15.0, 55.0], [20.0, 65.0]]
         },
         {
             "_id": "route_007",
@@ -328,7 +334,8 @@ def seed_database():
             "lead_time_days": 24,
             "transport_cost_usd_bbl": 5.9,
             "risk_base": 20,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[0.0, 0.0], [-35.0, 20.0], [-10.0, 60.0], [10.0, 70.0]]
         },
         {
             "_id": "route_008",
@@ -342,7 +349,8 @@ def seed_database():
             "lead_time_days": 35,
             "transport_cost_usd_bbl": 8.1,
             "risk_base": 18,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[20.0, -60.0], [0.0, -30.0], [-35.0, 20.0], [-10.0, 70.0], [10.0, 85.0]]
         },
         {
             "_id": "route_009",
@@ -356,7 +364,8 @@ def seed_database():
             "lead_time_days": 6,
             "transport_cost_usd_bbl": 1.9,
             "risk_base": 28,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[24.5, 58.0], [23.5, 65.0]]
         },
         {
             "_id": "route_010",
@@ -370,7 +379,8 @@ def seed_database():
             "lead_time_days": 9,
             "transport_cost_usd_bbl": 2.4,
             "risk_base": 59,
-            "status": "active"
+            "status": "active",
+            "waypoints": [[35.0, 25.0], [27.0, 34.0], [13.0, 43.0], [10.0, 55.0], [15.0, 68.0]]
         }
     ]
 

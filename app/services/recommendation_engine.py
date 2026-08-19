@@ -61,6 +61,7 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
 
         candidates.append({
             "supplier": sup_name,
+            "dest_port": r.get("to_node", "").replace("port_", "").upper(),
             "route_id": r["_id"],
             "route_name": route_name,
             "available_bpd": available_bpd,

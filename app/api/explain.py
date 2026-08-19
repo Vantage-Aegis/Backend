@@ -17,6 +17,8 @@ async def explain_scenario(req: ExplainRequest, db: AsyncIOMotorDatabase = Depen
         return ExplanationResponse(**cached)
 
     scen_doc = await db.scenario_results.find_one({"scenario_id": req.scenario_id})
+    if scen_doc and "_id" in scen_doc:
+        scen_doc.pop("_id")
     if not scen_doc:
         # Default mock scenario data payload for generation if ID not stored
         scen_doc = {
