@@ -60,7 +60,7 @@ def calculate_risk(factors: dict, entity_type: str = "corridor") -> dict:
         "factors": complete_factors
     }
 
-def calculate_ml_risk(features_dict: dict) -> dict:
+def calculate_ml_risk(features_dict: dict, db=None, entity_id=None) -> dict:
     """
     Attempts to calculate risk using the XGBoost ML model if available.
     Returns: {"ml_score": float, "shap_top3": [{"feature": str, "contribution": float}]}
@@ -119,3 +119,90 @@ def calculate_ml_risk(features_dict: dict) -> dict:
     except Exception as e:
         print(f"Failed to calculate ML risk: {e}")
         return None
+
+async def calculate_ml_risk_async(features_dict: dict, db=None, entity_id=None, entity_type="corridor") -> dict:
+    if db is None or entity_id is None:
+        print(f"Falling back to deterministic factors for ML features for {entity_type} {entity_id}")
+        return calculate_ml_risk(features_dict)
+        
+    print(f"Building full feature vector from DB for {entity_type} {entity_id}")
+    
+    ml_features = {
+        "political_stability": 0.0,
+        "rule_of_law": 0.0,
+        "control_of_corruption": 0.0,
+        "government_effectiveness": 0.0,
+        "sanction_entity_count": 0,
+        "sanctions_severity": 0.0,
+        "oil_production_tbpd": 0.0,
+        "oil_exports_tbpd": 0.0,
+        "import_share_pct_qty": 0.0,
+        "hhi_qty": 0.0,
+        "conflict_intensity": 0.0,
+        "conflict_event_count": 0,
+        "avg_media_tone": 0.0
+    }
+    
+    # Supplier related
+    all_suppliers = await db.suppliers.find({}).to_list(length=100)
+    total_export = sum([s.get("current_export_bpd", 0) for s in all_suppliers])
+    if total_export > 0:
+        ml_features["hhi_qty"] = sum([(s.get("current_export_bpd", 0) / total_export * 100)**2 for s in all_suppliers])
+    
+    if entity_type == "supplier":
+        supplier = next((s for s in all_suppliers if s["_id"] == entity_id), None)
+        if supplier:
+            wgi = supplier.get("wgi_indicators", {})
+            ml_features["political_stability"] = wgi.get("political_stability", 0.0)
+            ml_features["rule_of_law"] = wgi.get("rule_of_law", 0.0)
+            ml_features["control_of_corruption"] = wgi.get("control_of_corruption", 0.0)
+            ml_features["government_effectiveness"] = wgi.get("government_effectiveness", 0.0)
+            
+            ml_features["oil_production_tbpd"] = supplier.get("max_capacity_bpd", 0) / 1000.0
+            ml_features["oil_exports_tbpd"] = supplier.get("current_export_bpd", 0) / 1000.0
+            
+            if total_export > 0:
+                ml_features["import_share_pct_qty"] = (supplier.get("current_export_bpd", 0) / total_export) * 100.0
+                
+    elif entity_type == "corridor":
+        corridor = await db.corridors.find_one({"_id": entity_id})
+        if corridor:
+            ml_features["import_share_pct_qty"] = corridor.get("share_of_india_imports_pct", 0.0)
+            
+        routes = await db.routes.find({"corridor_id": entity_id}).to_list(length=100)
+        supplier_ids = list(set([r["from_node"] for r in routes]))
+        sups = [s for s in all_suppliers if s["_id"] in supplier_ids]
+        
+        if sups:
+            wgis = [s.get("wgi_indicators", {}) for s in sups if "wgi_indicators" in s]
+            if wgis:
+                ml_features["political_stability"] = sum([w.get("political_stability", 0.0) for w in wgis]) / len(wgis)
+                ml_features["rule_of_law"] = sum([w.get("rule_of_law", 0.0) for w in wgis]) / len(wgis)
+                ml_features["control_of_corruption"] = sum([w.get("control_of_corruption", 0.0) for w in wgis]) / len(wgis)
+                ml_features["government_effectiveness"] = sum([w.get("government_effectiveness", 0.0) for w in wgis]) / len(wgis)
+                
+            ml_features["oil_production_tbpd"] = sum([s.get("max_capacity_bpd", 0) for s in sups]) / 1000.0
+            ml_features["oil_exports_tbpd"] = sum([s.get("current_export_bpd", 0) for s in sups]) / 1000.0
+
+    # Risk Events
+    events = await db.risk_events.find({}).to_list(length=100)
+    entity_events = []
+    for e in events:
+        if entity_type == "corridor" and e.get("corridor_id") == entity_id:
+            entity_events.append(e)
+        elif entity_type == "supplier":
+            sup = next((s for s in all_suppliers if s["_id"] == entity_id), None)
+            if sup and sup["name"] in e.get("title", ""):
+                entity_events.append(e)
+
+    sanc_events = [e for e in entity_events if e.get("category") == "sanctions"]
+    ml_features["sanction_entity_count"] = len(sanc_events)
+    if sanc_events:
+        ml_features["sanctions_severity"] = sum([e.get("severity", 0) for e in sanc_events]) / len(sanc_events)
+        
+    conf_events = [e for e in entity_events if e.get("category") in ["conflict", "shipping_attack", "diplomatic"]]
+    ml_features["conflict_event_count"] = len(conf_events)
+    if conf_events:
+        ml_features["conflict_intensity"] = sum([e.get("severity", 0) for e in conf_events]) / len(conf_events)
+        
+    return calculate_ml_risk(ml_features)

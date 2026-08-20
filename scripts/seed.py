@@ -30,7 +30,13 @@ def seed_database():
             "current_export_bpd": 950000,
             "base_price_usd_bbl": 82.5,
             "reliability_score": 0.9,
-            "notes": "Primary supplier transiting Strait of Hormuz"
+            "notes": "Primary supplier transiting Strait of Hormuz",
+            "wgi_indicators": {
+                "political_stability": 0.0,
+                "rule_of_law": 0.45,
+                "control_of_corruption": 0.35,
+                "government_effectiveness": 0.40
+            }
         },
         {
             "_id": "sup_iraq",
@@ -42,7 +48,13 @@ def seed_database():
             "current_export_bpd": 880000,
             "base_price_usd_bbl": 79.0,
             "reliability_score": 0.82,
-            "notes": "Basra export terminals via Hormuz"
+            "notes": "Basra export terminals via Hormuz",
+            "wgi_indicators": {
+                "political_stability": -1.8,
+                "rule_of_law": -1.4,
+                "control_of_corruption": -1.2,
+                "government_effectiveness": -1.0
+            }
         },
         {
             "_id": "sup_uae",
@@ -54,7 +66,13 @@ def seed_database():
             "current_export_bpd": 750000,
             "base_price_usd_bbl": 83.0,
             "reliability_score": 0.95,
-            "notes": "Has bypass pipeline to Fujairah port outside Hormuz"
+            "notes": "Has bypass pipeline to Fujairah port outside Hormuz",
+            "wgi_indicators": {
+                "political_stability": 0.7,
+                "rule_of_law": 0.9,
+                "control_of_corruption": 1.1,
+                "government_effectiveness": 1.2
+            }
         },
         {
             "_id": "sup_usa",
@@ -66,7 +84,13 @@ def seed_database():
             "current_export_bpd": 350000,
             "base_price_usd_bbl": 78.5,
             "reliability_score": 0.98,
-            "notes": "Atlantic long-haul supply route"
+            "notes": "Atlantic long-haul supply route",
+            "wgi_indicators": {
+                "political_stability": 0.3,
+                "rule_of_law": 1.6,
+                "control_of_corruption": 1.2,
+                "government_effectiveness": 1.5
+            }
         },
         {
             "_id": "sup_russia",
@@ -78,7 +102,13 @@ def seed_database():
             "current_export_bpd": 1100000,
             "base_price_usd_bbl": 71.0,
             "reliability_score": 0.85,
-            "notes": "Discounted crude via Red Sea / Suez or Cape route"
+            "notes": "Discounted crude via Red Sea / Suez or Cape route",
+            "wgi_indicators": {
+                "political_stability": -0.8,
+                "rule_of_law": -0.8,
+                "control_of_corruption": -0.7,
+                "government_effectiveness": -0.2
+            }
         },
         {
             "_id": "sup_nigeria",
@@ -90,7 +120,13 @@ def seed_database():
             "current_export_bpd": 300000,
             "base_price_usd_bbl": 85.0,
             "reliability_score": 0.78,
-            "notes": "West African sweet crude transiting Cape route"
+            "notes": "West African sweet crude transiting Cape route",
+            "wgi_indicators": {
+                "political_stability": -2.0,
+                "rule_of_law": -1.0,
+                "control_of_corruption": -1.1,
+                "government_effectiveness": -1.1
+            }
         },
         {
             "_id": "sup_kuwait",
@@ -102,7 +138,13 @@ def seed_database():
             "current_export_bpd": 520000,
             "base_price_usd_bbl": 81.0,
             "reliability_score": 0.91,
-            "notes": "Persian Gulf origin transiting Hormuz"
+            "notes": "Persian Gulf origin transiting Hormuz",
+            "wgi_indicators": {
+                "political_stability": 0.2,
+                "rule_of_law": 0.3,
+                "control_of_corruption": -0.1,
+                "government_effectiveness": 0.0
+            }
         },
         {
             "_id": "sup_qatar",
@@ -114,7 +156,13 @@ def seed_database():
             "current_export_bpd": 300000,
             "base_price_usd_bbl": 82.0,
             "reliability_score": 0.93,
-            "notes": "Condensate & light crude transiting Hormuz"
+            "notes": "Condensate & light crude transiting Hormuz",
+            "wgi_indicators": {
+                "political_stability": -1.5,
+                "rule_of_law": -1.3,
+                "control_of_corruption": -0.8,
+                "government_effectiveness": -0.6
+            }
         }
     ]
 

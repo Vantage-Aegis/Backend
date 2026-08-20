@@ -1,14 +1,35 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import connect_to_mongo, close_mongo_connection
+from app.database import connect_to_mongo, close_mongo_connection, get_db
 from app.api import dashboard, suppliers, network, risk, scenarios, routes, reserves, recommendations, explain, events
+from app.services.news_poller import GdeltNewsPoller
+from app.config import get_settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Connect to MongoDB Atlas
     await connect_to_mongo()
+    
+    # Initialize and start GDELT News Poller
+    settings = get_settings()
+    if settings.ENABLE_GDELT_POLLING:
+        db_client = None
+        # get db client for poller
+        db_client = get_db()
+        
+        poller = GdeltNewsPoller(db=db_client, poll_interval_minutes=settings.GDELT_POLL_INTERVAL_MINUTES)
+        app.state.news_poller = poller
+        await poller.start()
+    else:
+        app.state.news_poller = None
+
     yield
+    
+    # Shutdown
+    if hasattr(app.state, "news_poller") and app.state.news_poller:
+        await app.state.news_poller.stop()
+        
     # Shutdown: Close database pool
     await close_mongo_connection()
 
