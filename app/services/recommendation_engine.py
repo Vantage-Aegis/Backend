@@ -16,6 +16,24 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
     """
     supplier_map = {s["_id"]: s for s in suppliers}
     candidates = []
+    
+    # Try loading ML Ranker
+    ranker_model = None
+    ranker_features = None
+    try:
+        import xgboost as xgb
+        import pandas as pd
+        import json
+        from pathlib import Path
+        BASE_DIR = Path(__file__).resolve().parent.parent.parent
+        MODELS_DIR = BASE_DIR / "ml" / "models"
+        if (MODELS_DIR / "xgboost_ranker_model.json").exists() and (MODELS_DIR / "ranker_features.json").exists():
+            ranker_model = xgb.XGBRanker()
+            ranker_model.load_model(MODELS_DIR / "xgboost_ranker_model.json")
+            with open(MODELS_DIR / "ranker_features.json", "r") as f:
+                ranker_features = json.load(f)
+    except Exception as e:
+        print(f"ML Ranker load failed: {e}")
 
     for r in routes:
         if r["_id"] in excluded_route_ids or r.get("status") == "blocked":
@@ -56,6 +74,27 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
             dependency_penalty * ROUTE_WEIGHTS["existing_dependency_penalty"]
         )
 
+        # ML Score fallback
+        ml_score = None
+        if ranker_model and ranker_features:
+            try:
+                import pandas as pd
+                row = {
+                    "volume_000t": available_bpd / 20.0,
+                    "value_million_usd": available_bpd * landed_cost / 1000.0,
+                    "unit_cost_usd_per_t": landed_cost,
+                    "route_risk_score": float(risk_score),
+                    "supplier_reliability": float(reliability),
+                    "import_share_pct_qty": 5.0,
+                    "cost_competitiveness": 1.0,
+                }
+                row = {col: row.get(col, 0.0) for col in ranker_features}
+                df = pd.DataFrame([row])
+                raw_score = float(ranker_model.predict(df)[0])
+                ml_score = max(0.0, min(1.0, (raw_score + 5) / 10.0))
+            except Exception:
+                pass
+
         route_name = f"{r.get('corridor', 'Direct')} ({r['from_node']} -> {r['to_node']})"
         reason = f"Low risk ({risk_score}) with {available_bpd:,} bpd available spare capacity via {transit_days}-day transit."
 
@@ -69,9 +108,16 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
             "transit_days": transit_days,
             "risk_score": float(risk_score),
             "score": round(final_score, 2),
+            "ml_score": round(ml_score, 2) if ml_score is not None else None,
             "reason": reason
         })
 
-    # Sort descending by score
-    candidates.sort(key=lambda x: x["score"], reverse=True)
+    # Sort descending by ml_score if available, otherwise deterministic score
+    candidates.sort(key=lambda x: x["ml_score"] if x.get("ml_score") is not None else x["score"], reverse=True)
+    
+    # Assign ML Rank
+    for i, c in enumerate(candidates):
+        if c.get("ml_score") is not None:
+            c["ml_rank"] = i + 1
+            
     return candidates

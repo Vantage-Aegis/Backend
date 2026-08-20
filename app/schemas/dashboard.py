@@ -20,6 +20,22 @@ class RiskTrendPoint(BaseModel):
     date: str
     score: float
 
+class DemandForecastPoint(BaseModel):
+    date: str
+    forecasted_demand_tmt: float
+    forecast_lower: float
+    forecast_upper: float
+    forecasted_demand_bpd: int
+    forecast_lower_bpd: int
+    forecast_upper_bpd: int
+
+class PriceAnomalyPoint(BaseModel):
+    date: str
+    price: float
+    price_change_pct: Optional[float]
+    anomaly_flag: bool
+    anomaly_score: float
+
 class DashboardResponse(BaseModel):
     import_dependency_pct: float = 88.0
     hormuz_share_pct: float = 42.0
@@ -29,3 +45,5 @@ class DashboardResponse(BaseModel):
     corridor_risks: List[CorridorRisk]
     top_corridors: List[TopCorridor] = []
     risk_trend: List[RiskTrendPoint] = []
+    ml_demand_forecast: Optional[List[DemandForecastPoint]] = None
+    ml_price_anomalies: Optional[List[PriceAnomalyPoint]] = None
