@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     DATABASE_NAME: str = "energy_resilience_db"
     GEMINI_API_KEY: str
     LLM_MODEL: str = "gemini-2.5-flash"
+    ENABLE_GDELT_POLLING: bool = True
+    GDELT_POLL_INTERVAL_MINUTES: int = 15
 
     model_config = SettingsConfigDict(
         env_file=".env",

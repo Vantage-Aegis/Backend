@@ -3,7 +3,7 @@ from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.database import get_db
 from app.schemas.risk import RiskResponse
-from app.services.risk_engine import calculate_risk, calculate_ml_risk
+from app.services.risk_engine import calculate_risk, calculate_ml_risk, calculate_ml_risk_async
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/risk", tags=["Risk Intelligence"])
@@ -33,7 +33,7 @@ async def get_risk(
             "price_volatility": 40.0
         }
         res = calculate_risk(factors, entity_type="supplier")
-        ml_res = calculate_ml_risk(factors) or {}
+        ml_res = await calculate_ml_risk_async(factors, db=db, entity_id=entity_id, entity_type="supplier") or {}
         
         doc = {
             "entity_type": "supplier",
@@ -77,8 +77,8 @@ async def get_risk(
         "price_volatility": round(base_risk * 0.9, 1)
     }
     res = calculate_risk(factors, entity_type="corridor")
-    ml_res = calculate_ml_risk(factors) or {}
     corr_id = entity_id or "corr_hormuz"
+    ml_res = await calculate_ml_risk_async(factors, db=db, entity_id=corr_id, entity_type="corridor") or {}
     
     doc = {
         "entity_type": "corridor",

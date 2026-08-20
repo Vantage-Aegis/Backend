@@ -2,7 +2,7 @@ import uuid
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, List
-from app.services.risk_engine import calculate_risk
+from app.services.risk_engine import calculate_risk, calculate_ml_risk
 from app.services.twin_service import propagate_disruption
 from app.services.recommendation_engine import rank_alternatives
 from app.services.reserve_optimizer import optimize_reserves
@@ -63,7 +63,18 @@ def run_simulation(params: Dict[str, Any], routes: List[Dict[str, Any]], supplie
         "corridor_dependency": 85.0,
         "supplier_dependency": 65.0
     }
-    risk_res = calculate_risk(risk_factors, entity_type="corridor")
+    ml_risk_res = calculate_ml_risk(risk_factors)
+    if ml_risk_res and "ml_score" in ml_risk_res:
+        score = ml_risk_res["ml_score"]
+        category = "Critical" if score > 75 else "High" if score > 55 else "Medium" if score > 30 else "Low"
+        risk_res = {
+            "score": score,
+            "category": category,
+            "factors": risk_factors,
+            "shap_top3": ml_risk_res.get("shap_top3", [])
+        }
+    else:
+        risk_res = calculate_risk(risk_factors, entity_type="corridor")
 
     # 5. Rank alternative routes
     alternatives = rank_alternatives(deficit, routes, suppliers, list(affected_edge_ids))

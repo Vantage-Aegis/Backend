@@ -1,12 +1,30 @@
 import uuid
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.database import get_db
 from app.schemas.event import EventCreateRequest, EventResponse
 from app.agents.event_classifier_agent import classify_event
 
 router = APIRouter(prefix="/api/events", tags=["Risk Events"])
+
+@router.get("/news/status")
+async def get_news_status(request: Request, db: AsyncIOMotorDatabase = Depends(get_db)):
+    # Return poller stats
+    processed_count = await db.processed_articles.count_documents({})
+    
+    # Try to get poller stats if available on app.state
+    poller = getattr(request.app.state, "news_poller", None) if request else None
+    
+    last_poll = None
+    if poller:
+        last_poll = poller.stats.get("last_poll_time")
+
+    return {
+        "polling_active": poller._running if poller else False,
+        "events_processed_total": processed_count,
+        "last_poll_time": last_poll
+    }
 
 @router.get("", response_model=List[EventResponse])
 async def get_events(db: AsyncIOMotorDatabase = Depends(get_db)):
