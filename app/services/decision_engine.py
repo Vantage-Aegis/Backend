@@ -20,12 +20,17 @@ def generate_recommendations(risk: Dict[str, Any], deficit_bpd: int, baseline_su
     # 2. Top alternative procurement actions
     for alt in alternatives[:3]:
         shift_pct = min(100, round((alt["available_bpd"] / deficit_bpd * 100))) if deficit_bpd > 0 else 15
-        actions.append({
+        alt_card = {
             "rank": rank,
             "action": f"Increase {alt['supplier']} crude sourcing via {alt['route_name']} by {shift_pct}% ({alt['available_bpd']:,} bpd)",
             "score": alt["score"],
             "reason": alt["reason"]
-        })
+        }
+        if alt.get("ml_score") is not None:
+            alt_card["ml_score"] = alt["ml_score"]
+            alt_card["ml_rank"] = alt.get("ml_rank")
+            
+        actions.append(alt_card)
         rank += 1
 
     # 3. Reserve drawdown directive

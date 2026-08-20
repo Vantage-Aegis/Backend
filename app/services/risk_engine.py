@@ -59,3 +59,63 @@ def calculate_risk(factors: dict, entity_type: str = "corridor") -> dict:
         "category": categorize(rounded_score),
         "factors": complete_factors
     }
+
+def calculate_ml_risk(features_dict: dict) -> dict:
+    """
+    Attempts to calculate risk using the XGBoost ML model if available.
+    Returns: {"ml_score": float, "shap_top3": [{"feature": str, "contribution": float}]}
+    or None if model is not loaded/available.
+    """
+    try:
+        import xgboost as xgb
+        import pandas as pd
+        import joblib
+        import json
+        from pathlib import Path
+        
+        BASE_DIR = Path(__file__).resolve().parent.parent.parent
+        MODELS_DIR = BASE_DIR / "ml" / "models"
+        
+        model_path = MODELS_DIR / "xgboost_risk_model.json"
+        features_path = MODELS_DIR / "risk_features.json"
+        explainer_path = MODELS_DIR / "shap_explainer.joblib"
+        
+        if not (model_path.exists() and features_path.exists()):
+            return None
+            
+        with open(features_path, "r") as f:
+            feature_cols = json.load(f)
+            
+        # Build dataframe using defaults for missing features
+        row = {col: features_dict.get(col, 0.0) for col in feature_cols}
+        df = pd.DataFrame([row])
+        
+        # Load model and predict
+        model = xgb.XGBRegressor()
+        model.load_model(model_path)
+        ml_score = float(model.predict(df)[0])
+        ml_score = max(0.0, min(100.0, ml_score))
+        
+        # SHAP explainability
+        shap_top3 = []
+        if explainer_path.exists():
+            explainer = joblib.load(explainer_path)
+            shap_values = explainer.shap_values(df)
+            
+            # Get top 3 indices by absolute magnitude
+            import numpy as np
+            top3_idx = np.argsort(np.abs(shap_values[0]))[-3:][::-1]
+            
+            for idx in top3_idx:
+                shap_top3.append({
+                    "feature": feature_cols[idx],
+                    "contribution": float(shap_values[0][idx])
+                })
+                
+        return {
+            "ml_score": round(ml_score, 1),
+            "shap_top3": shap_top3
+        }
+    except Exception as e:
+        print(f"Failed to calculate ML risk: {e}")
+        return None
