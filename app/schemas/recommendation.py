@@ -6,6 +6,8 @@ class ActionCard(BaseModel):
     action: str
     score: float
     reason: str
+    ml_score: float = None
+    ml_rank: int = None
 
 class RecommendationsResponse(BaseModel):
     scenario_id: str

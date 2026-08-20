@@ -3,7 +3,7 @@ from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.database import get_db
 from app.schemas.risk import RiskResponse
-from app.services.risk_engine import calculate_risk
+from app.services.risk_engine import calculate_risk, calculate_ml_risk
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/risk", tags=["Risk Intelligence"])
@@ -33,6 +33,7 @@ async def get_risk(
             "price_volatility": 40.0
         }
         res = calculate_risk(factors, entity_type="supplier")
+        ml_res = calculate_ml_risk(factors) or {}
         
         doc = {
             "entity_type": "supplier",
@@ -40,6 +41,8 @@ async def get_risk(
             "score": res["score"],
             "category": res["category"],
             "factors": res["factors"],
+            "ml_score": ml_res.get("ml_score"),
+            "shap_top3": ml_res.get("shap_top3"),
             "computed_at": datetime.now(timezone.utc).isoformat()
         }
         await db.risk_scores.update_one(
@@ -53,7 +56,9 @@ async def get_risk(
             entity_type="supplier",
             score=res["score"],
             category=res["category"],
-            factors=res["factors"]
+            factors=res["factors"],
+            ml_score=ml_res.get("ml_score"),
+            shap_top3=ml_res.get("shap_top3")
         )
 
     # Corridor risk
@@ -72,6 +77,7 @@ async def get_risk(
         "price_volatility": round(base_risk * 0.9, 1)
     }
     res = calculate_risk(factors, entity_type="corridor")
+    ml_res = calculate_ml_risk(factors) or {}
     corr_id = entity_id or "corr_hormuz"
     
     doc = {
@@ -80,6 +86,8 @@ async def get_risk(
         "score": res["score"],
         "category": res["category"],
         "factors": res["factors"],
+        "ml_score": ml_res.get("ml_score"),
+        "shap_top3": ml_res.get("shap_top3"),
         "computed_at": datetime.now(timezone.utc).isoformat()
     }
     await db.risk_scores.update_one(
@@ -93,5 +101,7 @@ async def get_risk(
         entity_type="corridor",
         score=res["score"],
         category=res["category"],
-        factors=res["factors"]
+        factors=res["factors"],
+        ml_score=ml_res.get("ml_score"),
+        shap_top3=ml_res.get("shap_top3")
     )
