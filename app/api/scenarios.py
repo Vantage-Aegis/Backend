@@ -48,6 +48,8 @@ async def simulate_scenario(req: ScenarioSimulateRequest, db: AsyncIOMotorDataba
         scenario_id=sim_res["scenario_id"],
         risk=sim_res["risk"],
         affected=sim_res["affected"],
+        affected_suppliers=sim_res.get("affected_suppliers", []),
+        affected_refineries=sim_res.get("affected_refineries", []),
         supply_impact=sim_res["supply_impact"],
         alternatives=sim_res["alternatives"],
         reserve_plan=sim_res["reserve_plan"],

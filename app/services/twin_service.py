@@ -83,6 +83,7 @@ def propagate_disruption(
     severity: int = 5,
     routes: List[Dict[str, Any]] = None,
     refineries: List[Dict[str, Any]] = None,
+    suppliers: List[Dict[str, Any]] = None,
     supplier_id: str = None,
     port_id: str = None
 ) -> Dict[str, Any]:
@@ -92,12 +93,18 @@ def propagate_disruption(
     """
     routes = routes or []
     refineries = refineries or []
+    suppliers = suppliers or []
+    
+    supplier_map = {s["_id"]: s.get("name", s["_id"]) for s in suppliers}
+    refinery_map = {r["_id"]: r.get("name", r["_id"]) for r in refineries}
+
     affected_edges = []
     affected_ports: Set[str] = set()
+    affected_supplier_names: Set[str] = set()
 
     for r in routes:
         is_affected = False
-        if corridor_id and (r.get("corridor_id") == corridor_id or r.get("corridor") == corridor_id):
+        if corridor_id and (r.get("corridor_id") == corridor_id or r.get("corridor") == corridor_id or corridor_id in str(r.get("corridor"))):
             is_affected = True
         elif supplier_id and r.get("from_node") == supplier_id:
             is_affected = True
@@ -108,19 +115,30 @@ def propagate_disruption(
             affected_edges.append(r["_id"])
             if r.get("to_node"):
                 affected_ports.add(r["to_node"])
+            if r.get("from_node"):
+                from_id = r["from_node"]
+                sup_name = supplier_map.get(from_id, from_id.replace("sup_", "").replace("_", " ").title())
+                affected_supplier_names.add(sup_name)
             # Update edge status and capacity
             r["status"] = "blocked" if severity >= 5 else "degraded"
-            r["effective_capacity_bpd"] = int(r.get("capacity_bpd", 0) * (1 - severity/5.0))
+            r["effective_capacity_bpd"] = int(r.get("capacity_bpd", 0) * (1 - severity / 5.0))
 
-    affected_refineries: Set[str] = set()
+    affected_refinery_ids: Set[str] = set()
+    affected_refinery_names: Set[str] = set()
+
     for ref in refineries:
         connected = ref.get("connected_ports", [])
-        # Refinery affected only if ALL its supply edges are blocked/degraded
-        if connected and all(p_id in affected_ports for p_id in connected):
-            affected_refineries.add(ref["_id"])
+        # Refinery affected if any connected port receives blocked/degraded supply
+        if connected and any(p_id in affected_ports for p_id in connected):
+            ref_id = ref["_id"]
+            affected_refinery_ids.add(ref_id)
+            affected_refinery_names.add(refinery_map.get(ref_id, ref.get("name", ref_id)))
 
     return {
         "edges": affected_edges,
         "ports": list(affected_ports),
-        "refineries": list(affected_refineries)
+        "refineries": list(affected_refinery_ids),
+        "affected_suppliers": sorted(list(affected_supplier_names)),
+        "affected_refinery_names": sorted(list(affected_refinery_names))
     }
+

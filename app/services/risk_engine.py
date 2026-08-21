@@ -86,8 +86,26 @@ def calculate_ml_risk(features_dict: dict, db=None, entity_id=None) -> dict:
         with open(features_path, "r") as f:
             feature_cols = json.load(f)
             
-        # Build dataframe using defaults for missing features
-        row = {col: features_dict.get(col, 0.0) for col in feature_cols}
+        # Map generic scenario factors to XGBoost trained feature schema
+        mapped_dict = {
+            "political_stability": max(0.0, 100.0 - features_dict.get("geopolitical_tension", 50.0)),
+            "rule_of_law": max(0.0, 100.0 - features_dict.get("sanctions", 30.0)),
+            "control_of_corruption": 50.0,
+            "government_effectiveness": 50.0,
+            "sanction_entity_count": int(features_dict.get("sanctions", 30.0) / 10.0),
+            "sanctions_severity": features_dict.get("sanctions", 30.0),
+            "oil_production_tbpd": 2000.0,
+            "oil_exports_tbpd": 1500.0,
+            "import_share_pct_qty": features_dict.get("corridor_dependency", 42.0),
+            "hhi_qty": 2500.0,
+            "conflict_intensity": features_dict.get("shipping_disruption", features_dict.get("conflict_intensity", 40.0)),
+            "conflict_event_count": int(features_dict.get("shipping_disruption", 40.0) / 10.0),
+            "avg_media_tone": -5.0 if features_dict.get("shipping_disruption", 0) > 50 else 0.0
+        }
+        mapped_dict.update({k: v for k, v in features_dict.items() if k in feature_cols})
+            
+        # Build dataframe using feature_cols order
+        row = {col: mapped_dict.get(col, 0.0) for col in feature_cols}
         df = pd.DataFrame([row])
         
         # Load model and predict
@@ -102,7 +120,6 @@ def calculate_ml_risk(features_dict: dict, db=None, entity_id=None) -> dict:
             explainer = joblib.load(explainer_path)
             shap_values = explainer.shap_values(df)
             
-            # Get top 3 indices by absolute magnitude
             import numpy as np
             top3_idx = np.argsort(np.abs(shap_values[0]))[-3:][::-1]
             

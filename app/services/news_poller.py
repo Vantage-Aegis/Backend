@@ -59,7 +59,7 @@ class GdeltNewsPoller:
         }
         headers = {"User-Agent": USER_AGENT}
         
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(url, params=params, headers=headers)
             if resp.status_code == 200:
                 data = resp.json()
@@ -74,7 +74,7 @@ class GdeltNewsPoller:
         url = "https://news.google.com/rss/search?q=oil+crude+tanker+Hormuz+Red+Sea+sanctions&hl=en-US&gl=US&ceid=US:en"
         headers = {"User-Agent": USER_AGENT}
         
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=6.0, follow_redirects=True) as client:
             resp = await client.get(url, headers=headers)
             if resp.status_code == 200:
                 try:
@@ -86,7 +86,6 @@ class GdeltNewsPoller:
                         link_elem = item.find("link")
                         if title_elem is not None and title_elem.text:
                             raw_title = title_elem.text.strip()
-                            # Clean source suffix like "- Reuters" or "- Bloomberg"
                             title = raw_title.rsplit(" - ", 1)[0] if " - " in raw_title else raw_title
                             link = link_elem.text.strip() if link_elem is not None and link_elem.text else ""
                             articles.append({"title": title, "url": link})
@@ -99,7 +98,7 @@ class GdeltNewsPoller:
         """Single poll iteration trying GDELT first, falling back to RSS"""
         now = datetime.now(timezone.utc)
         articles = []
-        source_name = "gdelt_auto"
+        source_name = "GDELT"
 
         # 1. Try GDELT
         try:
@@ -111,7 +110,7 @@ class GdeltNewsPoller:
         if not articles:
             try:
                 articles = await self._fetch_rss_articles()
-                source_name = "live_news_rss"
+                source_name = "Live News"
             except Exception as e:
                 logger.error(f"RSS fetch failed: {e}")
 
@@ -167,7 +166,8 @@ class GdeltNewsPoller:
                 "confidence": confidence,
                 "needs_review": needs_review,
                 "description": f"Live news article: {url}",
-                "ingested_at": now.isoformat()
+                "ingested_at": now.isoformat(),
+                "date": now.strftime("%b %d, %Y")
             }
 
             await self.db.risk_events.insert_one(event_doc)

@@ -6,8 +6,8 @@ from typing import Optional
 class Settings(BaseSettings):
     MONGODB_URI: str
     DATABASE_NAME: str = "energy_resilience_db"
-    GEMINI_API_KEY: str
-    LLM_MODEL: str = "gemini-2.5-flash"
+    GEMINI_API_KEY: Optional[str] = None
+    LLM_MODEL: str = "gemini-2.0-flash"
     ENABLE_GDELT_POLLING: bool = True
     GDELT_POLL_INTERVAL_MINUTES: int = 15
 
