@@ -2396,14 +2396,13 @@ def seed_database():
                 "_id": "route_002",
                 "from_node": "sup_russia",
                 "to_node": "port_paradip",
-                "corridor": "Danish Straits + Gibraltar Strait + Suez Canal + Bab el-Mandeb + Strait of Malacca",
+                "corridor": "Danish Straits + Gibraltar Strait + Suez Canal + Bab el-Mandeb",
                 "corridor_id": "corr_danish",
                 "corridors": [
                         "corr_danish",
                         "corr_gibraltar",
                         "corr_suez",
-                        "corr_babelmandeb",
-                        "corr_malacca"
+                        "corr_babelmandeb"
                 ],
                 "capacity_bpd": 585000,
                 "current_flow_bpd": 450000,
