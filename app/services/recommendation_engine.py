@@ -99,13 +99,21 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
                 pass
 
         PORT_NAMES = {
+            "port_mundra": "Mundra",
+            "port_vadinar": "Vadinar",
             "port_jnpt": "JNPT",
-            "port_kandla": "Kandla",
-            "port_paradip": "Paradip",
+            "port_mumbai": "Mumbai",
+            "port_kochi": "Kochi",
             "port_mangalore": "Mangalore",
-            "port_vadinar": "Vadinar"
+            "port_vizag": "Vizag",
+            "port_paradip": "Paradip",
+            "port_ennore": "Ennore",
+            "port_chennai": "Chennai",
+            "port_haldia": "Haldia",
+            "port_kakinada": "Kakinada",
+            "port_kandla": "Kandla"
         }
-        dest_port = PORT_NAMES.get(r.get("to_node"), r.get("to_node", "").replace("port_", "").upper())
+        dest_port = PORT_NAMES.get(r.get("to_node"), r.get("to_node", "").replace("port_", "").title())
         risk_label = "Low risk" if risk_score < 30 else "Medium risk" if risk_score < 55 else "High risk"
 
         route_name = f"{r.get('corridor', 'Direct')} ({r['from_node']} -> {r['to_node']})"

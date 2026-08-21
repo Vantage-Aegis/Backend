@@ -68,6 +68,7 @@ def build_network(suppliers: List[Dict[str, Any]], ports: List[Dict[str, Any]], 
             "to_node": rt["to_node"],
             "corridor": rt.get("corridor"),
             "corridor_id": rt.get("corridor_id"),
+            "corridors": rt.get("corridors", []),
             "risk": risk_res["score"],
             "status": rt.get("status", "active"),
             "flow_bpd": flow,
@@ -90,6 +91,7 @@ def propagate_disruption(
     """
     BFS disruption propagation:
     Given a disrupted corridor, supplier, or port and severity level (1-5), flags affected routes, ports, and downstream refineries.
+    Supports multi-corridor array checking.
     """
     routes = routes or []
     refineries = refineries or []
@@ -104,7 +106,14 @@ def propagate_disruption(
 
     for r in routes:
         is_affected = False
-        if corridor_id and (r.get("corridor_id") == corridor_id or r.get("corridor") == corridor_id or corridor_id in str(r.get("corridor"))):
+        r_corridors = r.get("corridors", [])
+        if corridor_id and (
+            r.get("corridor_id") == corridor_id or
+            r.get("corridor") == corridor_id or
+            corridor_id in str(r.get("corridor")) or
+            corridor_id in r_corridors or
+            any(corridor_id in str(c) for c in r_corridors)
+        ):
             is_affected = True
         elif supplier_id and r.get("from_node") == supplier_id:
             is_affected = True

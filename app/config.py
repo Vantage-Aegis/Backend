@@ -3,6 +3,10 @@ from functools import lru_cache
 from typing import Optional
 
 
+from pathlib import Path
+
+ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+
 class Settings(BaseSettings):
     MONGODB_URI: str
     DATABASE_NAME: str = "energy_resilience_db"
@@ -12,7 +16,7 @@ class Settings(BaseSettings):
     GDELT_POLL_INTERVAL_MINUTES: int = 15
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(str(ENV_PATH), ".env"),
         env_file_encoding="utf-8",
         extra="ignore"
     )
