@@ -45,6 +45,9 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
         current_flow = r.get("current_flow_bpd", 0)
         max_cap = r.get("capacity_bpd", current_flow)
         spare_capacity = max(0, max_cap - current_flow)
+        if spare_capacity <= 0:
+            continue
+
         available_bpd = min(deficit_bpd if deficit_bpd > 0 else 500000, spare_capacity)
 
         base_price = sup.get("base_price_usd_bbl", 82.0)
@@ -95,12 +98,22 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
             except Exception:
                 pass
 
+        PORT_NAMES = {
+            "port_jnpt": "JNPT",
+            "port_kandla": "Kandla",
+            "port_paradip": "Paradip",
+            "port_mangalore": "Mangalore",
+            "port_vadinar": "Vadinar"
+        }
+        dest_port = PORT_NAMES.get(r.get("to_node"), r.get("to_node", "").replace("port_", "").upper())
+        risk_label = "Low risk" if risk_score < 30 else "Medium risk" if risk_score < 55 else "High risk"
+
         route_name = f"{r.get('corridor', 'Direct')} ({r['from_node']} -> {r['to_node']})"
-        reason = f"Low risk ({risk_score}) with {available_bpd:,} bpd available spare capacity via {transit_days}-day transit."
+        reason = f"{risk_label} ({int(risk_score)}) with {available_bpd:,} bpd available spare capacity via {transit_days}-day transit."
 
         candidates.append({
             "supplier": sup_name,
-            "dest_port": r.get("to_node", "").replace("port_", "").upper(),
+            "dest_port": dest_port,
             "route_id": r["_id"],
             "route_name": route_name,
             "available_bpd": available_bpd,

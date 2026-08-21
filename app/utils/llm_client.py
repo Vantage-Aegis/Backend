@@ -17,9 +17,9 @@ async def call_gemini_api(prompt: str, system_instruction: Optional[str] = None)
         logger.warning("Gemini API key is not configured. Falling back to deterministic narrative builder.")
         return None
 
-    # Official Google AI Studio REST Endpoint for Gemini Flash
-    model_name = settings.LLM_MODEL or "gemini-2.5-flash"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+    models_to_try = [settings.LLM_MODEL, "gemini-1.5-flash", "gemini-2.0-flash"]
+    # Deduplicate preserving order
+    models_to_try = [m for idx, m in enumerate(models_to_try) if m and m not in models_to_try[:idx]]
 
     contents = [{"role": "user", "parts": [{"text": prompt}]}]
     
@@ -35,20 +35,24 @@ async def call_gemini_api(prompt: str, system_instruction: Optional[str] = None)
         payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
 
     async def _call_api(current_payload):
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(url, json=current_payload)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            return parts[0].get("text", "")
-                else:
-                    logger.error(f"Gemini API call returned HTTP status {resp.status_code}: {resp.text}")
-        except Exception as e:
-            logger.error(f"Error communicating with Gemini API: {e}")
+        for target_model in models_to_try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={api_key}"
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(url, json=current_payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                return parts[0].get("text", "")
+                    elif resp.status_code == 404:
+                        logger.warning(f"Gemini model '{target_model}' 404 not found, trying next fallback model.")
+                    else:
+                        logger.error(f"Gemini API call ({target_model}) returned HTTP status {resp.status_code}: {resp.text}")
+            except Exception as e:
+                logger.error(f"Error communicating with Gemini API ({target_model}): {e}")
         return None
 
     result = await _call_api(payload)

@@ -14,6 +14,8 @@ class AffectedEntities(BaseModel):
     edges: List[str]
     ports: List[str]
     refineries: List[str]
+    affected_suppliers: Optional[List[str]] = []
+    affected_refinery_names: Optional[List[str]] = []
 
 class SupplyImpact(BaseModel):
     baseline_supply_bpd: int
@@ -45,6 +47,8 @@ class ScenarioSimulateResponse(BaseModel):
     scenario_id: str
     risk: Dict[str, Any]
     affected: AffectedEntities
+    affected_suppliers: Optional[List[str]] = []
+    affected_refineries: Optional[List[str]] = []
     supply_impact: SupplyImpact
     alternatives: List[AlternativeRoute]
     reserve_plan: ReservePlanSummary

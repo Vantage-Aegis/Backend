@@ -29,17 +29,18 @@ async def get_news_status(request: Request, db: AsyncIOMotorDatabase = Depends(g
 @router.get("", response_model=List[EventResponse])
 async def get_events(db: AsyncIOMotorDatabase = Depends(get_db)):
     """
-    Returns active geopolitical and logistics risk events.
+    Returns active geopolitical and logistics risk events, newest first.
     """
-    cursor = db.risk_events.find({})
+    cursor = db.risk_events.find({}).sort([("ingested_at", -1), ("date", -1), ("_id", -1)])
     docs = await cursor.to_list(length=100)
     result = []
     for d in docs:
+        sev = d.get("severity", 50)
         result.append(EventResponse(
             id=d["_id"],
             title=d["title"],
             corridor=d.get("corridor", "Strait of Hormuz"),
-            severity=d.get("severity", 50),
+            severity=sev if isinstance(sev, int) else 50,
             source=d.get("source", "manual"),
             category=d.get("category", "sanctions"),
             description=d.get("description", ""),
@@ -47,6 +48,19 @@ async def get_events(db: AsyncIOMotorDatabase = Depends(get_db)):
             needs_review=d.get("needs_review")
         ))
     return result
+
+@router.post("/poll")
+async def trigger_news_poll(request: Request, db: AsyncIOMotorDatabase = Depends(get_db)):
+    """
+    Triggers an immediate live GDELT/news poll iteration.
+    """
+    poller = getattr(request.app.state, "news_poller", None) if request else None
+    if not poller:
+        from app.services.news_poller import GdeltNewsPoller
+        poller = GdeltNewsPoller(db=db)
+    
+    await poller.poll_once()
+    return {"status": "success", "stats": poller.stats}
 
 @router.post("", response_model=EventResponse)
 async def create_event(req: EventCreateRequest, db: AsyncIOMotorDatabase = Depends(get_db)):
