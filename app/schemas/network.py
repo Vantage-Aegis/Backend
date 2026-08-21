@@ -17,6 +17,7 @@ class NetworkEdge(BaseModel):
     to_node: str = Field(..., alias="to")
     corridor: Optional[str] = None
     corridor_id: Optional[str] = None
+    corridors: Optional[List[str]] = Field(default_factory=list)
     risk: float
     status: str  # "active", "blocked", "degraded"
     flow_bpd: int

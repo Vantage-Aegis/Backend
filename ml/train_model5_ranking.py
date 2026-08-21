@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+DATA_DIR = BASE_DIR.parent / "data" if (BASE_DIR.parent / "data").exists() else BASE_DIR / "data"
 MODELS_DIR = BASE_DIR / "ml" / "models"
 os.makedirs(MODELS_DIR, exist_ok=True)
 
