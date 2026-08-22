@@ -14199,6 +14199,12 @@ def seed_database():
                 "description": "Elevated war-risk insurance premiums for commercial crude carriers."
         }
 ]
+    try:
+        from scripts.seed_historical_news import TIER_1_HISTORICAL_EVENTS, TIER_2_HISTORICAL_EVENTS
+        risk_events = risk_events + TIER_1_HISTORICAL_EVENTS + TIER_2_HISTORICAL_EVENTS
+    except Exception:
+        pass
+
     countries = [
         {
                 "_id": "IND",

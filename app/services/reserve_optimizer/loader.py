@@ -63,6 +63,13 @@ def load_national_baseline(data_dir: Optional[str] = None) -> NationalBaseline:
                 "as_of": str(row["as_of"]).strip(),
                 "source_or_basis": str(row["source_or_basis"]).strip()
             }
+    else:
+        metrics = {
+            "total_crude_consumption": {"value": 5600.0, "unit": "kbpd", "data_type": "REAL", "as_of": "2024", "source_or_basis": "PPAC"},
+            "import_dependency_pct": {"value": 88.0, "unit": "%", "data_type": "REAL", "as_of": "2024", "source_or_basis": "PPAC"},
+            "spr_total_capacity_million_bbl": {"value": 39.05, "unit": "million_bbl", "data_type": "REAL", "as_of": "2024", "source_or_basis": "ISPRL"},
+            "spr_current_fill_pct": {"value": 64.0, "unit": "%", "data_type": "REAL", "as_of": "2024", "source_or_basis": "ISPRL"}
+        }
     return NationalBaseline(metrics=metrics)
 
 def load_forecast_scenarios(data_dir: Optional[str] = None) -> Dict[str, List[DailyForecast]]:
@@ -85,4 +92,14 @@ def load_forecast_scenarios(data_dir: Optional[str] = None) -> Dict[str, List[Da
                 confidence_pct=float(row["confidence_pct"]),
                 trigger_event=str(row["trigger_event"]).strip()
             ))
+    else:
+        # Fallback default scenarios
+        scenarios["hormuz_closure_v1"] = [
+            DailyForecast("hormuz_closure_v1", d, f"2026-03-{d:02d}", 250.0 + (d * 10.0), 90.0, "Hormuz Blockade")
+            for d in range(1, 15)
+        ]
+        scenarios["red_sea_disruption_v1"] = [
+            DailyForecast("red_sea_disruption_v1", d, f"2026-03-{d:02d}", 150.0 + (d * 5.0), 85.0, "Bab-el-Mandeb Strikes")
+            for d in range(1, 15)
+        ]
     return scenarios
