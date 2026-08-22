@@ -4,7 +4,6 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.database import get_db
 from app.schemas.scenario import ScenarioSimulateRequest, ScenarioSimulateResponse, ScenarioTemplate
 from app.simulation.scenario_simulator import run_simulation
-from app.services.comparison_service import compare_scenarios
 
 router = APIRouter(prefix="/api/scenarios", tags=["Scenario Simulator"])
 
@@ -55,21 +54,3 @@ async def simulate_scenario(req: ScenarioSimulateRequest, db: AsyncIOMotorDataba
         reserve_plan=sim_res["reserve_plan"],
         recommendations=sim_res["recommendations"]
     )
-
-@router.get("/{scenario_id}/compare")
-async def get_scenario_comparison(scenario_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
-    """
-    Returns comparative diff analysis between baseline state and simulated disruption scenario.
-    """
-    sim_doc = await db.scenario_results.find_one({"scenario_id": scenario_id})
-    if not sim_doc:
-        suppliers_docs = await db.suppliers.find({}).to_list(length=100)
-        refineries_docs = await db.refineries.find({}).to_list(length=100)
-        routes_docs = await db.routes.find({}).to_list(length=100)
-        sim_doc = run_simulation({"event_type": "hormuz_closure"}, routes_docs, suppliers_docs, refineries_docs)
-
-    baseline_data = {
-        "total_daily_import_bpd": 4700000,
-        "overall_risk": {"score": 61.0, "category": "High"}
-    }
-    return compare_scenarios(baseline_data, sim_doc)

@@ -10,7 +10,7 @@ ROUTE_WEIGHTS = {
     "existing_dependency_penalty": 0.10
 }
 
-def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers: List[Dict[str, Any]], excluded_route_ids: List[str]) -> List[Dict[str, Any]]:
+def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers: List[Dict[str, Any]], excluded_route_ids: List[str], benchmark_price: float = 93.76) -> List[Dict[str, Any]]:
     """
     Evaluates and ranks candidate alternative crude procurement routes and suppliers.
     """
@@ -50,7 +50,7 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
 
         available_bpd = min(deficit_bpd if deficit_bpd > 0 else 500000, spare_capacity)
 
-        base_price = sup.get("base_price_usd_bbl", 82.0)
+        base_price = sup.get("base_price_usd_bbl", benchmark_price)
         freight_cost = r.get("transport_cost_usd_bbl", 3.0)
         landed_cost = round(base_price + freight_cost, 2)
         
@@ -115,15 +115,15 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
         }
         dest_port = PORT_NAMES.get(r.get("to_node"), r.get("to_node", "").replace("port_", "").title())
         risk_label = "Low risk" if risk_score < 30 else "Medium risk" if risk_score < 55 else "High risk"
-
-        route_name = f"{r.get('corridor', 'Direct')} ({r['from_node']} -> {r['to_node']})"
         reason = f"{risk_label} ({int(risk_score)}) with {available_bpd:,} bpd available spare capacity via {transit_days}-day transit."
 
+        route_corridor = r.get("corridor", "Direct")
         candidates.append({
             "supplier": sup_name,
             "dest_port": dest_port,
             "route_id": r["_id"],
-            "route_name": route_name,
+            "route": route_corridor,
+            "route_name": route_corridor,
             "available_bpd": available_bpd,
             "landed_cost_usd_bbl": landed_cost,
             "transit_days": transit_days,
@@ -136,8 +136,19 @@ def rank_alternatives(deficit_bpd: int, routes: List[Dict[str, Any]], suppliers:
     # Sort descending by ml_score if available, otherwise deterministic score
     candidates.sort(key=lambda x: x["ml_score"] if x.get("ml_score") is not None else x["score"], reverse=True)
     
+    # Deduplicate candidates sharing identical (supplier, route)
+    seen_pathways = set()
+    unique_candidates = []
+    for c in candidates:
+        key = (c["supplier"], c["route"])
+        if key not in seen_pathways:
+            seen_pathways.add(key)
+            unique_candidates.append(c)
+    candidates = unique_candidates
+
     # Assign ML Rank
     for i, c in enumerate(candidates):
+        c["rank"] = i + 1
         if c.get("ml_score") is not None:
             c["ml_rank"] = i + 1
             

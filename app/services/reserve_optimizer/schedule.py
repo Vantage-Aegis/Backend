@@ -168,7 +168,7 @@ def run_reserve_optimization(
         "daily_consumption_bpd": int(baseline.total_crude_consumption_kbpd * 1000.0),
         "safety_floor_days": round(safety_floor_bbl / (baseline.total_crude_consumption_kbpd * 1000.0), 1),
         "safety_floor_bbl": safety_floor_bbl,
-        "days_of_coverage": summary.national_days_of_cover_after_scenario,
+        "days_of_coverage": round(summary.national_days_of_cover_after_scenario, 1),
         "drawdown_bpd_avg": int((total_covered / len(results)) * 1000.0) if results else 0,
         "timeline": timeline,
         "plan": phase_plan,

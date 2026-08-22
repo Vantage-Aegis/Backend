@@ -21,5 +21,8 @@ class EventResponse(BaseModel):
     description: Optional[str] = ""
     confidence: Optional[float] = None
     needs_review: Optional[bool] = False
+    date: Optional[str] = None
+    published_at: Optional[str] = None
+    ingested_at: Optional[str] = None
 
     model_config = ConfigDict(populate_by_name=True)

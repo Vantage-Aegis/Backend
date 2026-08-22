@@ -36,6 +36,16 @@ class PriceAnomalyPoint(BaseModel):
     anomaly_flag: bool
     anomaly_score: float
 
+class LiveBrentPriceSummary(BaseModel):
+    price: float
+    formatted: str = "$0.00"
+    currency: str = "USD"
+    unit: str = "barrel"
+    price_change_pct: float = 0.0
+    change_24h_amount: float = 0.0
+    updated_at: str
+    source: str = "oilpriceapi"
+
 class DashboardResponse(BaseModel):
     import_dependency_pct: float = 88.0
     hormuz_share_pct: float = 42.0
@@ -47,3 +57,5 @@ class DashboardResponse(BaseModel):
     risk_trend: List[RiskTrendPoint] = []
     ml_demand_forecast: Optional[List[DemandForecastPoint]] = None
     ml_price_anomalies: Optional[List[PriceAnomalyPoint]] = None
+    live_brent_price: Optional[LiveBrentPriceSummary] = None
+    shadow_scenario: Optional[Dict[str, Any]] = None

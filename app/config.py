@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "gemini-2.0-flash"
     ENABLE_GDELT_POLLING: bool = True
     GDELT_POLL_INTERVAL_MINUTES: int = 15
+    OIL_PRICE_API_KEY: Optional[str] = None
+    OIL_PRICE_POLL_INTERVAL_HOURS: int = 24
+    ENABLE_OIL_PRICE_POLLING: bool = True
+    ADMIN_PASSWORD: str = "vantage_admin"
 
     model_config = SettingsConfigDict(
         env_file=(str(ENV_PATH), ".env"),
