@@ -1,19 +1,341 @@
-# Vantage Backend — Energy Supply Chain Resilience System
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Vantage-Aegis/Frontend/main/public/logo.png" alt="Vantage Logo" width="80" />
+</p>
 
-This is the backend service for the Vantage AI-Driven Energy Supply Chain Resilience system. It provides real-time supply chain digital twin simulation, geopolitical risk intelligence, and AI-powered procurement rerouting recommendations for import-dependent economies like India.
+<h1 align="center">Vantage — Backend</h1>
 
-## 🚀 Installation & Setup
+<p align="center">
+  <strong>India's Crude Oil Supply Chain Intelligence Platform</strong>
+</p>
 
-Follow these steps to deploy and run the backend on any device:
+<p align="center">
+  The AI-driven data processing, geopolitical risk intelligence, and supply chain simulation engine powering the Vantage platform.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/MongoDB-Motor-47A248?logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/AI-Gemini_2.0_Flash-4285F4?logo=google&logoColor=white" alt="Google Gemini" />
+  <img src="https://img.shields.io/badge/ML-XGBoost-blue" alt="XGBoost" />
+  <img src="https://img.shields.io/badge/ML-Prophet-blue" alt="Prophet" />
+</p>
+
+
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Backend Architecture](#backend-architecture)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Data Sources & Methodology](#data-sources--methodology)
+- [API Documentation](#api-documentation)
+- [Static vs Real-Time Data](#static-vs-real-time-data)
+- [Data Flow](#data-flow)
+- [Environment Variables](#environment-variables)
+- [Installation & Setup](#installation--setup)
+- [Running Locally](#running-locally)
+- [Error Handling](#error-handling)
+- [Security](#security)
+- [Troubleshooting](#troubleshooting)
+- [Related Repositories](#related-repositories)
+- [Team](#team)
+
+---
+
+## Overview
+
+The **Vantage Backend** is a high-performance Python application built on FastAPI. It acts as the central brain of the Vantage platform, responsible for real-time intelligence gathering, complex geopolitical risk scoring, supply chain disruption simulation, and procurement optimization.
+
+By combining deterministic operations research (like Linear Programming for strategic reserves) with advanced machine learning (XGBoost, Prophet) and Large Language Models (Google Gemini), the backend transforms raw global data into actionable executive intelligence.
+
+---
+
+## Features
+
+### 1. Real-Time Geopolitical Intelligence Poller
+**What it does:** Continuously monitors the GDELT v2 Document API (with fallback to Google News RSS) for energy-related geopolitical events.
+**How it works:** A background async task (`news_poller.py`) fetches articles every 15 minutes. It uses the Google Gemini LLM via `event_classifier_agent.py` to classify the article's severity, affected corridor, and confidence level.
+**Data:** Real-time external API data saved to MongoDB (`risk_events` collection).
+
+### 2. Live Crude Oil Price Tracking
+**What it does:** Fetches the daily Brent Crude benchmark price and monitors for volatility.
+**How it works:** An async task (`oil_price_poller.py`) fetches daily prices from OilPriceAPI. It also queries pre-computed historical anomaly data from an XGBoost model.
+**Data:** Real-time external API data saved to MongoDB (`brent_prices`).
+
+### 3. Supply Chain Digital Twin
+**What it does:** Maintains a mathematical graph representation of the global crude oil supply chain relevant to India.
+**How it works:** `twin_service.py` constructs a network graph of suppliers (nodes), ports (nodes), refineries (nodes), and maritime corridors (edges). It handles the complex logic of propagating disruptions (e.g., if the Strait of Hormuz is blocked, all connected routes are degraded, and dependent refineries experience capacity drops).
+**Data:** Database-backed (seeded configuration of real-world infrastructure).
+
+### 4. Dynamic Risk Engine
+**What it does:** Computes weighted vulnerability scores for maritime corridors and supplier nations.
+**How it works:** `risk_engine.py` evaluates 8 factors (e.g., geopolitical tension, shipping disruption, dependency percentage). It integrates both deterministic scoring and ML-driven predictions (`xgboost_risk_model.json`), including SHAP value attributions for explainability.
+**Data:** Computed on-demand using a combination of database metrics and active news events.
+
+### 5. Disruption Simulator
+**What it does:** Calculates the compounding effects of a theoretical supply chain disruption.
+**How it works:** `scenario_simulator.py` receives parameters (severity, duration, affected node). It invokes the Digital Twin to propagate the disruption, calculates the crude deficit (bpd), and triggers downstream recommendations.
+**Data:** Computed dynamically per user request.
+
+### 6. Strategic Reserve Optimizer
+**What it does:** Calculates optimal drawdown schedules for India's Strategic Petroleum Reserves (SPR) to cover supply deficits.
+**How it works:** `reserve_optimizer` supports two algorithms: a fast Greedy Proportional heuristic and a strict Linear Programming (LP) model. It calculates daily discharge limits across facilities (Visakhapatnam, Mangalore, Padur).
+**Data:** Computed dynamically based on database SPR capacities and simulated deficits.
+
+### 7. Adaptive Procurement Orchestrator
+**What it does:** Ranks alternative crude sourcing routes when primary corridors are disrupted.
+**How it works:** `recommendation_engine.py` evaluates unblocked routes based on available supplier spare capacity, transit time, landed cost, and route risk, returning a prioritized list.
+**Data:** Computed dynamically using Digital Twin state.
+
+### 8. AI Narrative Generation
+**What it does:** Translates complex numerical simulation results into a readable executive brief.
+**How it works:** `explanation_agent.py` sends the JSON simulation output to Google Gemini with strict system instructions to generate a structured narrative (why it's risky, why routes are recommended, uncertainties). Includes a deterministic fallback if the API fails.
+**Data:** LLM-generated text, cached in MongoDB.
+
+---
+
+## Backend Architecture
+
+The backend follows a modular, service-oriented architecture:
+
+* **`app/api/` (Routers):** FastAPI endpoints that validate incoming HTTP requests via Pydantic schemas and route them to business logic.
+* **`app/services/` (Core Logic):** The heavy lifting—graph propagation, risk calculation, optimization algorithms, and background data polling.
+* **`app/agents/` (AI Integration):** LLM wrappers for specific tasks (event classification, narrative generation).
+* **`app/simulation/` (Orchestration):** Connects the various services to execute end-to-end "what-if" scenarios.
+* **`app/schemas/` (Models):** Pydantic definitions ensuring strict data validation.
+* **`ml/` (Machine Learning):** Training scripts and serialized models (XGBoost, Prophet) for demand forecasting, anomaly detection, and risk scoring.
+
+---
+
+## Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| Web Framework | FastAPI | High-performance async REST API |
+| Python Server | Uvicorn | ASGI server implementation |
+| Database | MongoDB (Motor) | Async NoSQL data persistence |
+| Data Validation | Pydantic | Schema definition and type checking |
+| AI / LLM | Google Gemini 2.0 Flash | Event classification and narrative generation |
+| Machine Learning | XGBoost, Prophet, Scikit-learn | Risk modeling, anomaly detection, forecasting |
+| External APIs | GDELT, Google News RSS, OilPriceAPI | Live intelligence gathering |
+| HTTP Client | HTTPX | Async HTTP requests for polling |
+| Testing | Pytest | Unit and integration testing |
+
+---
+
+## Project Structure
+
+```text
+Backend/
+├── app/
+│   ├── main.py                 # FastAPI application entry point
+│   ├── config.py               # Environment variable configuration
+│   ├── database.py             # MongoDB connection manager
+│   ├── api/                    # FastAPI route definitions
+│   │   ├── admin.py            # Admin controls and overrides
+│   │   ├── dashboard.py        # Aggregated KPI endpoints
+│   │   ├── events.py           # News/intelligence feed endpoints
+│   │   ├── explain.py          # AI narrative endpoint
+│   │   ├── network.py          # Digital Twin graph endpoints
+│   │   ├── prices.py           # Crude oil price endpoints
+│   │   ├── recommendations.py  # Procurement ranking endpoints
+│   │   ├── reserves.py         # Strategic reserve optimization
+│   │   ├── risk.py             # Risk scoring endpoints
+│   │   ├── routes.py           # Alternative routes endpoints
+│   │   ├── scenarios.py        # Disruption simulation endpoints
+│   │   └── suppliers.py        # Supplier management endpoints
+│   ├── agents/                 # LLM Integrations
+│   │   ├── event_classifier_agent.py
+│   │   └── explanation_agent.py
+│   ├── schemas/                # Pydantic data validation models
+│   ├── services/               # Core business logic
+│   │   ├── decision_engine.py
+│   │   ├── news_poller.py      # Background GDELT/RSS task
+│   │   ├── oil_price_poller.py # Background price task
+│   │   ├── oil_price_service.py
+│   │   ├── recommendation_engine.py
+│   │   ├── reserve_optimizer/  # LP and Greedy algorithms
+│   │   ├── risk_engine.py      # Weighted risk scoring
+│   │   └── twin_service.py     # Supply chain graph logic
+│   ├── simulation/
+│   │   └── scenario_simulator.py # Orchestrates disruption logic
+│   └── utils/
+│       ├── llm_client.py       # Wrapper for Gemini API calls
+│       └── scoring_utils.py    # Math/normalization helpers
+├── data/                       # Processed datasets and ML outputs
+├── ml/                         # Machine Learning pipelines
+│   ├── models/                 # Serialized XGBoost models (.json/.joblib)
+│   ├── train_model1_risk.py    
+│   ├── train_model3_forecast.py
+│   ├── train_model4_anomaly.py 
+│   └── train_model5_ranking.py 
+├── scripts/
+│   ├── seed.py                 # Database initialization script
+│   └── seed_historical_news.py # Populates past events
+├── tests/                      # Pytest suite
+├── requirements.txt            # Python dependencies
+└── .env                        # Environment variables (not in version control)
+```
+
+---
+
+## Data Sources & Methodology
+
+> Vantage uses multiple heterogeneous data sources to power its analysis, machine learning models, and real-time features. Detailed information about these sources, including source URLs, datasets, fields, preprocessing methodologies, update frequency, licensing, and limitations, is maintained in a dedicated external document.
+
+**Detailed Data Sources Documentation:**
+[View Data Sources & Methodology](https://docs.google.com/document/d/1HVely15othP6V93me_gB-JdQ5FoNl45GNyOwcdvb598/edit?usp=sharing)
+
+*This document is critical for understanding the origin and validity of the data driving the Vantage platform.*
+
+---
+
+## API Documentation
+
+The backend provides a comprehensive REST API. When running locally, interactive documentation is available at `http://localhost:8000/docs` (Swagger UI) and `http://localhost:8000/redoc` (ReDoc).
+
+### Core Endpoints
+
+| Method | Endpoint | Purpose | Authentication |
+|--------|----------|---------|----------------|
+| GET | `/api/dashboard` | Returns aggregated metrics, KPIs, and overall risk | None |
+| GET | `/api/events` | Returns classified risk events (news feed) | None |
+| POST | `/api/events/poll` | Triggers an immediate GDELT news fetch | None |
+| GET | `/api/prices/latest` | Returns real-time Brent crude price | None |
+| GET | `/api/network` | Returns Digital Twin graph (nodes/edges) | None |
+| GET | `/api/risk` | Returns risk score for a corridor or supplier | None |
+| POST | `/api/scenarios/simulate` | Executes a disruption scenario | None |
+| GET | `/api/routes` | Returns ranked alternative routes | None |
+| POST | `/api/reserves/optimize` | Computes reserve drawdown schedule | None |
+| POST | `/api/explain` | Generates AI executive summary | None |
+| POST | `/api/admin/login` | Authenticates administrator | None |
+| POST | `/api/admin/entities/{type}/{id}/toggle` | Manually blocks/unblocks supply chain nodes | Bearer Token |
+
+### API Example
+
+**Execute Simulation (`POST /api/scenarios/simulate`)**
+
+Request:
+```json
+{
+  "event_type": "corridor_closure",
+  "severity": 100,
+  "duration_days": 30,
+  "demand_delta_pct": 0,
+  "affected_corridor_id": "corr_hormuz"
+}
+```
+
+Response (Truncated):
+```json
+{
+  "scenario_id": "sim_8f7a2b",
+  "risk": {
+    "score": 92.5,
+    "category": "Critical"
+  },
+  "supply_impact": {
+    "baseline_supply_bpd": 4700000,
+    "lost_supply_bpd": 1974000,
+    "deficit_bpd": 1974000,
+    "price_impact_pct": 22.4
+  },
+  "alternatives": [ ... ],
+  "reserve_plan": {
+    "days_of_coverage": 8.5,
+    "drawdown_bpd_avg": 232000
+  },
+  "recommendations": [ ... ]
+}
+```
+
+---
+
+## Static vs Real-Time Data
+
+Vantage blends pre-configured infrastructure data with real-time intelligence:
+
+| Data Element | Type | Source | Update Mechanism |
+|--------------|------|--------|------------------|
+| Infrastructure (Ports/Refineries) | Static/Database | Seed Script | Manual DB updates / Admin panel |
+| Base Routes & Capacities | Static/Database | Seed Script | Manual DB updates / Admin panel |
+| Live News Events | Real-Time | GDELT API / RSS | Async Poller (every 15 mins) |
+| Brent Crude Price | Real-Time | OilPriceAPI | Async Poller (every 24 hours) |
+| Risk Scores | Computed | Risk Engine | Recomputed on request / event trigger |
+| ML Demand Forecast | Static ML Output | Prophet JSON | Updated when model is retrained |
+| Price Anomalies | Mixed | XGBoost JSON + Live Price | Historical static + Live eval |
+| AI Explanations | Computed LLM | Google Gemini | Generated on-demand, cached in DB |
+
+---
+
+## Data Flow
+
+Example: **Real-Time News Processing Lifecycle**
+
+```text
+External Source (GDELT API / Google News RSS)
+        ↓
+Background Task (`news_poller.py` - fetches every 15m)
+        ↓
+AI Classification (Gemini LLM extracts severity, location, confidence)
+        ↓
+Database Insertion (Saved to `risk_events` MongoDB collection)
+        ↓
+Risk Recomputation (If confidence is high, `risk_engine.py` updates scores)
+        ↓
+Digital Twin Update (Admin approval engine flags routes as 'degraded'/'blocked')
+        ↓
+API Response (Frontend fetches updated state via `/api/dashboard`)
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the root of the `Backend/` directory.
+
+```env
+# Required: MongoDB Connection String
+MONGODB_URI="mongodb+srv://<username>:<password>@cluster.mongodb.net/"
+
+# Optional: Database Name (Defaults to energy_resilience_db)
+DATABASE_NAME="energy_resilience_db"
+
+# Required: Google Gemini API Key for LLM classification and explanation
+GEMINI_API_KEY="your_gemini_api_key"
+
+# Optional: LLM Model (Defaults to gemini-2.0-flash)
+LLM_MODEL="gemini-2.0-flash"
+
+# Optional: OilPriceAPI Key for live crude pricing
+OIL_PRICE_API_KEY="your_oilprice_api_key"
+
+# Optional: Poller Controls (Default: True)
+ENABLE_GDELT_POLLING=True
+ENABLE_OIL_PRICE_POLLING=True
+
+# Optional: Admin Password (Defaults to vantage_admin)
+ADMIN_PASSWORD="secure_password_here"
+```
+
+*If `GEMINI_API_KEY` is missing, the system will fall back to deterministic text templates for explanations.*
+*If `OIL_PRICE_API_KEY` is missing, the system will fall back to cached database prices.*
+
+---
+
+## Installation & Setup
 
 ### Prerequisites
 - **Python 3.10+**
-- A **MongoDB Atlas** cluster URL.
-- A **Google Gemini API Key**.
+- A **MongoDB Atlas** cluster URL (or local MongoDB instance)
+- A **Google Gemini API Key** (from Google AI Studio)
 
 ### 1. Clone & Environment Setup
-Navigate to the backend directory and set up a virtual environment:
 ```bash
+git clone https://github.com/Vantage-Aegis/Backend.git
 cd Backend
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -24,67 +346,84 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. Environment Variables
-Create a `.env` file in the root of the `Backend/` directory (you can copy `.env.example` if it exists). Add the following variables:
-```env
-MONGODB_URI="mongodb+srv://<user>:<password>@cluster0.xxx.mongodb.net/"
-DATABASE_NAME="energy_resilience_db"
-GEMINI_API_KEY="your_google_gemini_api_key_here"
-LLM_MODEL="gemini-2.5-flash"
-```
+### 3. Configure Environment
+Create a `.env` file as described in the Environment Variables section.
 
 ### 4. Seed the Database
-Initialize your MongoDB database with the required mock data (suppliers, ports, refineries, corridors, routes, and India's baseline country metrics):
+Initialize the database with the required mock infrastructure data (suppliers, ports, refineries, routes).
 ```bash
+# Warning: This will drop existing collections in the configured database
 python scripts/seed.py
 ```
-*Note: This will clear existing data in the database and write fresh documents.*
-
-### 5. Run the Server
-Start the FastAPI server:
+*(Optional) Seed historical news events for a richer initial dashboard:*
 ```bash
-uvicorn app.main:app --reload --port 8000
+python scripts/seed_historical_news.py
 ```
-The API will be available at `http://localhost:8000`. You can view the interactive Swagger documentation at `http://localhost:8000/docs`.
 
-### 6. Run Tests
-Verify the installation by running the test suite:
+---
+
+## Running Locally
+
+### Start the Server
+Run the FastAPI application using Uvicorn:
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at `http://localhost:8000`.
+Background pollers will start automatically upon server launch.
+
+### Run Tests
+The backend includes a Pytest suite for core services.
 ```bash
 pytest tests/ -v
 ```
 
 ---
 
-## 🏗️ Architecture & File Explanations
+## Error Handling
 
-During the recent comprehensive audit, we thoroughly updated the backend to ensure it aligns perfectly with the system specifications, is completely secure, and runs flawlessly. Below is an explanation of every core component and the specific work completed on them.
+The backend implements robust error handling:
+- **HTTP Exceptions:** Returns standard JSON error responses with proper HTTP status codes (e.g., 404 for not found, 401 for unauthorized).
+- **LLM Fallbacks:** If the Gemini API times out, hits rate limits, or returns invalid JSON, `llm_client.py` includes a retry loop. If that fails, deterministic fallback templates are used to prevent system crashes.
+- **Poller Resilience:** `news_poller.py` attempts to fetch from GDELT. If GDELT is rate-limiting (429) or times out, it seamlessly falls back to parsing the live Google News RSS feed.
+- **Pydantic Validation:** All API requests and LLM JSON outputs are strictly validated against schema definitions.
 
-### Application Core
-- **`app/main.py`**: The FastAPI entry point. It registers all API routers and configures strictly scoped CORS middleware. *(Recent fix: Removed permissive wildcard `*` domains to harden security).*
-- **`app/config.py`**: Uses Pydantic to strictly validate environment variables. *(Recent fix: Stripped hardcoded passwords and Gemini keys, forcing the app to read from `.env`).*
-- **`app/database.py`**: Manages the `AsyncIOMotorClient` connection to MongoDB. *(Recent fix: Refactored to only use FastAPI's `lifespan` context manager, preventing background connection leaks).*
+---
 
-### Core AI & Algorithms (`app/services/` & `app/simulation/`)
-- **`twin_service.py`**: Calculates the geopolitical "Digital Twin" graph of routes, ports, and refineries. *(Recent fix: Refactored disruption propagation to accurately reduce `effective_capacity_bpd`, set edges to `blocked`/`degraded`, and intelligently flag refineries as disrupted only when all supply routes fall).*
-- **`risk_engine.py`**: Computes weighted risk scores dynamically based on 8 geopolitical factors. *(Recent fix: Rewritten to use `scoring_utils.py` for accurate min-max normalization and weighted distribution according to the system blueprint).*
-- **`recommendation_engine.py`**: The Adaptive Procurement Orchestrator. Ranks alternative crude sources based on lead time, landed cost, and route risk. *(Recent fix: Corrected algorithms that incorrectly hallucinated 400k bpd of spare capacity on blocked routes).*
-- **`reserve_optimizer.py`**: The Strategic Reserve Agent. Calculates how many days India's strategic petroleum reserves can offset a supply deficit.
-- **`decision_engine.py`**: Combines recommendations from the reserve optimizer and the procurement orchestrator into a top-3 ranked action plan for the dashboard.
-- **`scenario_simulator.py`**: Runs "what-if" simulations (like a Strait of Hormuz closure). *(Recent fix: Added robust fallback logic and logging if graph propagation fails to find affected routes).*
+## Security
 
-### AI Integration (`app/agents/` & `app/utils/`)
-- **`utils/llm_client.py`**: The main async HTTP wrapper for connecting to the Gemini API. *(Recent fix: Implemented strict `systemInstruction` support, bumped timeout limits, and added an intelligent retry loop that auto-prompts the AI if it fails to return valid JSON).*
-- **`utils/scoring_utils.py`**: *(New)* Contains standard math utilities like `normalize` and `weighted_score` used by all engines.
-- **`agents/event_classifier_agent.py`**: An LLM agent that reads live news/events and classifies their threat severity and impacted corridor. *(Recent fix: Prompt-engineered to return a `confidence` metric, which gates low-confidence classifications into a manual `needs_review` state).*
-- **`agents/explanation_agent.py`**: An LLM agent that translates complex scenario mathematics into simple, executive-level summaries.
+- **CORS:** Middleware is strictly scoped to specific localhost origins for development. (Must be updated for production).
+- **Environment Variables:** No hardcoded secrets. All API keys and database credentials are read from the `.env` file via `pydantic-settings`.
+- **Authentication:** The Admin panel endpoints are secured using a Bearer token session mechanism.
+- **Input Validation:** Pydantic prevents injection of unexpected data payloads.
 
-### API Endpoints (`app/api/`)
-- **`dashboard.py`**: Aggregates top-level metrics. *(Recent fix: Modified to read real baseline stats from the DB's `countries` collection and generates dynamic risk trend dates rather than hardcoding).*
-- **`events.py`**: Ingests new intelligence events. *(Recent fix: Now triggers automatic risk re-computation across the Digital Twin when high-confidence events are detected).*
-- **`risk.py`**: Returns and persists risk intelligence scores.
-- **`scenarios.py`, `recommendations.py`, `network.py`, etc.**: Thin wrappers that pass incoming REST payload requests down into the business logic services.
+---
 
-### Scripts & Schemas
-- **`scripts/seed.py`**: The database hydration script. *(Recent fix: Cleaned out hardcoded URIs. Added the required `countries` and `risk_scores` collections. Rebalanced maritime shipping route distributions to exactly match the 4 Hormuz, 2 Red Sea, 2 Cape, and 2 Direct/Malacca specification).*
-- **`app/schemas/`**: Pydantic models mapping incoming requests and responses. *(Recent fix: Updated `EventResponse` to include AI `confidence` and `needs_review` flags).*
-- **`tests/`**: The Pytest suite. *(Recent fix: Fully modernized to use FastAPI `TestClient` as a context manager so database lifecycle connections spin up and tear down cleanly during tests).*
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `pymongo.errors.ServerSelectionTimeoutError` | Check your `MONGODB_URI`. Ensure your IP address is whitelisted in MongoDB Atlas Network Access. |
+| News events aren't updating | Ensure `ENABLE_GDELT_POLLING=True` in `.env`. Check console logs for API timeouts. |
+| AI Explanations return basic text | Verify your `GEMINI_API_KEY` is correct and has quota remaining. |
+| CORS errors in Frontend | Ensure the frontend is running on an allowed origin (e.g., `http://localhost:5173`) or update `app/main.py`. |
+| Port 8000 already in use | Kill the existing process (`lsof -ti:8000 \| xargs kill -9`) or start Uvicorn on a different port (`--port 8001`). |
+
+---
+
+## Related Repositories
+
+- **Frontend:** [github.com/Vantage-Aegis/Frontend](https://github.com/Vantage-Aegis/Frontend)
+
+## Documentation
+
+- **Data Sources & Methodology:** [View Document](https://docs.google.com/document/d/1HVely15othP6V93me_gB-JdQ5FoNl45GNyOwcdvb598/edit?usp=sharing)
+
+---
+
+## Team
+
+### [Kumar Suryanshu](https://github.com/Suryanshu-01)
+### [Sridhar Manokaran](https://github.com/sridhar1923)
+### [Shiv Thanmay](https://github.com/Shiv-th)
