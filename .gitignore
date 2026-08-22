@@ -27,4 +27,6 @@ htmlcov/
 .idea/
 .vscode/
 
-data/
+data/*
+!data/prophet_forecast_output.json
+!data/brent_anomalies_output.json

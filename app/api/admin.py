@@ -16,12 +16,22 @@ router = APIRouter(prefix="/api/admin", tags=["Admin"])
 class LoginRequest(BaseModel):
     password: str
 
+LOCAL_ADMIN_SESSIONS = {}
+
 async def get_admin_user(authorization: Optional[str] = Header(None), db: AsyncIOMotorDatabase = Depends(get_db)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ")[1]
     
-    session = await db.admin_sessions.find_one({"token": token})
+    session = None
+    try:
+        session = await db.admin_sessions.find_one({"token": token})
+    except Exception:
+        pass
+        
+    if not session:
+        session = LOCAL_ADMIN_SESSIONS.get(token)
+        
     if not session:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
         
@@ -39,11 +49,17 @@ async def login(req: LoginRequest, db: AsyncIOMotorDatabase = Depends(get_db)):
     token = str(uuid.uuid4())
     expires = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
     
-    await db.admin_sessions.insert_one({
+    session_doc = {
         "token": token,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": expires
-    })
+    }
+    
+    LOCAL_ADMIN_SESSIONS[token] = session_doc
+    try:
+        await db.admin_sessions.insert_one(session_doc)
+    except Exception:
+        pass
     
     return {"token": token, "expires_at": expires}
 
