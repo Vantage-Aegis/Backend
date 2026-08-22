@@ -22,7 +22,8 @@ async def optimize_reserve_drawdown(
         res = optimize_reserves(
             deficit_bpd=req.deficit_bpd,
             duration_days=req.duration_days or 30,
-            algorithm=req.algorithm or "greedy"
+            algorithm=req.algorithm or "greedy",
+            include_planned=req.include_planned or False
         )
         return ReserveOptimizeResponse(**res)
 
@@ -37,7 +38,8 @@ async def optimize_reserve_drawdown(
             res = optimize_reserves(
                 deficit_bpd=def_bpd,
                 duration_days=req.duration_days or 30,
-                algorithm=req.algorithm or "greedy"
+                algorithm=req.algorithm or "greedy",
+                include_planned=req.include_planned or False
             )
             return ReserveOptimizeResponse(**res)
 
