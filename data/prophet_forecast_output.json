@@ -1,0 +1,81 @@
+{
+  "forecast": [
+    {
+      "date": "2021-04-01",
+      "forecasted_demand_tmt": 227432.4037366077,
+      "forecast_lower": 216568.83269447586,
+      "forecast_upper": 238002.65545943,
+      "forecasted_demand_bpd": 4567341,
+      "forecast_lower_bpd": 4349176,
+      "forecast_upper_bpd": 4779614
+    },
+    {
+      "date": "2022-04-01",
+      "forecasted_demand_tmt": 231424.60939202286,
+      "forecast_lower": 220428.88827921264,
+      "forecast_upper": 242852.07661308956,
+      "forecasted_demand_bpd": 4647513,
+      "forecast_lower_bpd": 4426695,
+      "forecast_upper_bpd": 4877001
+    },
+    {
+      "date": "2023-04-01",
+      "forecasted_demand_tmt": 235725.0930766135,
+      "forecast_lower": 224645.35909886233,
+      "forecast_upper": 246872.62249885657,
+      "forecasted_demand_bpd": 4733876,
+      "forecast_lower_bpd": 4511371,
+      "forecast_upper_bpd": 4957743
+    },
+    {
+      "date": "2024-04-01",
+      "forecasted_demand_tmt": 239956.47675061884,
+      "forecast_lower": 229143.76134558496,
+      "forecast_upper": 250176.3040396559,
+      "forecasted_demand_bpd": 4818851,
+      "forecast_lower_bpd": 4601708,
+      "forecast_upper_bpd": 5024088
+    },
+    {
+      "date": "2025-04-01",
+      "forecasted_demand_tmt": 244145.7681375345,
+      "forecast_lower": 233484.909634374,
+      "forecast_upper": 255140.6323034415,
+      "forecasted_demand_bpd": 4902982,
+      "forecast_lower_bpd": 4688888,
+      "forecast_upper_bpd": 5123783
+    },
+    {
+      "date": "2026-01-01",
+      "forecasted_demand_tmt": 247328.02503138935,
+      "forecast_lower": 236217.3377292861,
+      "forecast_upper": 257971.57513700615,
+      "forecasted_demand_bpd": 4966888,
+      "forecast_lower_bpd": 4743761,
+      "forecast_upper_bpd": 5180634
+    },
+    {
+      "date": "2027-01-01",
+      "forecasted_demand_tmt": 251551.74781777844,
+      "forecast_lower": 240030.1591562778,
+      "forecast_upper": 262398.7599878123,
+      "forecasted_demand_bpd": 5051710,
+      "forecast_lower_bpd": 4820331,
+      "forecast_upper_bpd": 5269542
+    },
+    {
+      "date": "2028-01-01",
+      "forecasted_demand_tmt": 255775.47060416758,
+      "forecast_lower": 244237.64484106266,
+      "forecast_upper": 267099.3371589711,
+      "forecasted_demand_bpd": 5136532,
+      "forecast_lower_bpd": 4904827,
+      "forecast_upper_bpd": 5363940
+    }
+  ],
+  "model_metadata": {
+    "training_periods": 28,
+    "regressor": "gdp_growth_rate",
+    "last_training_date": "2025-04-01"
+  }
+}
