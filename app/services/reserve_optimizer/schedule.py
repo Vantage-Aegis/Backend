@@ -25,10 +25,12 @@ def run_reserve_optimization(
     if include_planned:
         for s in sites:
             if s.site_id == "CHK":
+                s.status = "operational"
                 s.current_fill_pct = 100.0
                 s.current_fill_million_bbl = s.capacity_million_bbl
                 s.max_drawdown_rate_kbpd = 200.0
             elif s.site_id == "PDR2":
+                s.status = "operational"
                 s.current_fill_pct = 100.0
                 s.current_fill_million_bbl = s.capacity_million_bbl
                 s.max_drawdown_rate_kbpd = 180.0
@@ -185,7 +187,8 @@ def run_reserve_optimization(
 def optimize_reserves(
     deficit_bpd: int,
     duration_days: int = 30,
-    algorithm: str = "greedy"
+    algorithm: str = "greedy",
+    include_planned: bool = False
 ) -> Dict[str, Any]:
     """
     Adapter wrapper for scenario_simulator.py and existing legacy callers.
@@ -206,6 +209,7 @@ def optimize_reserves(
     res = run_reserve_optimization(
         scenario_id="simulation_custom",
         algorithm=algorithm,
+        include_planned=include_planned,
         custom_gap_forecast=custom_forecast
     )
     
